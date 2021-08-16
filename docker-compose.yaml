@@ -1,0 +1,47 @@
+version: "3"
+
+networks:
+  jenkins:
+    driver: bridge
+
+services:
+  jenkins-server:
+    container_name: test_jenkins-server
+    build:
+      context: .
+    restart: always
+    environment:
+      - DOCKER_HOST=tcp://docker:2376
+      - DOCKER_CERT_PATH=/certs/client
+      - DOCKER_TLS_VERIFY=1
+    ports:
+      - "8082:8080"
+      - "50001:50000"
+    volumes:
+      - ./ssh:/var/jenkins_home/.ssh
+      - ./data/jenkins-data:/var/jenkins_home:rw
+      - ./data/jenkins-docker-certs:/certs/client:ro
+      - ./data/extras:/extras:rw
+    networks:
+      - test_jenkins
+
+  jenkins_docker:
+    container_name: test_jenkins-docker
+    image: docker:dind
+    privileged: true
+    environment:
+      - DOCKER_TLS_CERTDIR=/certs
+    ports:
+      - "2376:2376"
+    volumes:
+      - ./data/jenkins-docker-certs:/certs/client
+      - ./data/jenkins-data:/var/jenkins_home
+      - ./data/extras:/extras
+    networks:
+      test_jenkins:
+        aliases:
+          - docker
+
+networks:
+  test_jenkins:
+    driver: bridge
